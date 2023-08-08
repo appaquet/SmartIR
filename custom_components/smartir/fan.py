@@ -7,8 +7,10 @@ import os.path
 import voluptuous as vol
 
 from homeassistant.components.fan import (
-    FanEntity, FanEntityFeature,
-    PLATFORM_SCHEMA, DIRECTION_REVERSE, DIRECTION_FORWARD)
+    FanEntity, PLATFORM_SCHEMA,
+    DIRECTION_REVERSE, DIRECTION_FORWARD,
+    SUPPORT_SET_SPEED, SUPPORT_DIRECTION, SUPPORT_OSCILLATE, 
+    ATTR_OSCILLATING )
 from homeassistant.const import (
     CONF_NAME, STATE_OFF, STATE_ON, STATE_UNKNOWN)
 from homeassistant.core import callback
@@ -62,7 +64,7 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
 
         try:
             codes_source = ("https://raw.githubusercontent.com/"
-                            "smartHomeHub/SmartIR/master/"
+                            "appaquet/SmartIR/master/"
                             "codes/fan/{}.json")
 
             await Helper.downloader(codes_source.format(device_code), device_json_path)
@@ -233,14 +235,14 @@ class SmartIRFan(FanEntity, RestoreEntity):
             self._last_on_speed = self._speed
 
         await self.send_command()
-        self.async_write_ha_state()
+        await self.async_update_ha_state()
 
     async def async_oscillate(self, oscillating: bool) -> None:
         """Set oscillation of the fan."""
         self._oscillating = oscillating
 
         await self.send_command()
-        self.async_write_ha_state()
+        await self.async_update_ha_state()
 
     async def async_set_direction(self, direction: str):
         """Set the direction of the fan"""
@@ -249,7 +251,7 @@ class SmartIRFan(FanEntity, RestoreEntity):
         if not self._speed.lower() == SPEED_OFF:
             await self.send_command()
 
-        self.async_write_ha_state()
+        await self.async_update_ha_state()
 
     async def async_turn_on(self, percentage: int = None, preset_mode: str = None, **kwargs):
         """Turn on the fan."""
@@ -293,10 +295,10 @@ class SmartIRFan(FanEntity, RestoreEntity):
         if new_state.state == STATE_ON and self._speed == SPEED_OFF:
             self._on_by_remote = True
             self._speed = None
-            self.async_write_ha_state()
+            await self.async_update_ha_state()
 
         if new_state.state == STATE_OFF:
             self._on_by_remote = False
             if self._speed != SPEED_OFF:
                 self._speed = SPEED_OFF
-            self.async_write_ha_state()
+            await self.async_update_ha_state()
